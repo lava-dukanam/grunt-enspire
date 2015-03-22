@@ -14,6 +14,8 @@ module.exports = function(grunt) {
     // creation: http://gruntjs.com/creating-tasks
 
     grunt.registerTask('enspire','A plugin for specific use within Enspire Commerce.', function(arg1, arg2) {
+        grunt.loadNpmTasks('grunt-contrib-symlink');
+        grunt.loadNpmTasks("grunt-extend-config");
 
         // Holds platform.json config
         var objPlatform;
@@ -159,7 +161,7 @@ module.exports = function(grunt) {
                                     }
                                 }
                             }
-                            console.log(required.modules);
+                            //console.log(required.modules);
                         }
                     }
                 }

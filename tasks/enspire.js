@@ -156,7 +156,7 @@ module.exports = function(grunt) {
                                 var lngModulesDependencyModules = objModuleConfig.dependencies.modules.length;
                                 for(var x=0; x<lngModulesDependencyModules; x++){
                                     var ModulesDependencyModule = objModuleConfig.dependencies.modules[x];
-                                    if(required.modules.indexOf(ModulesDependencyModule) == -1 && objPlatform.modules.indexOf(ModulesDependencyModule) == -1){
+                                    if(required.modules.indexOf(ModulesDependencyModule) === -1 && objPlatform.modules.indexOf(ModulesDependencyModule) === -1){
                                         required.modules.push(ModulesDependencyModule);
                                     }
                                 }
@@ -179,13 +179,94 @@ module.exports = function(grunt) {
                 return false;
             }
 
+            var viewFiles = [];
             var lngViews = objPlatform.views.length;
+            var cwdViews = objPlatform.bower_directory+'/enspire.platform/views/';
             for(var i=0;i<lngViews;i++){
-                var aryFiles = grunt.file.expand({cwd:objPlatform.bower_directory+'/enspire.platform/views/'},objPlatform.views[i]);
-                if(aryFiles.length===0){
-                    grunt.log.warn('"'+objPlatform.views[i]+'" does not return any files from the "'+objPlatform.bower_directory+'/enspire.platform/views/" directory.');
+                var viewsFolder = cwdViews+objPlatform.views[i];
+                if(!grunt.file.isDir(viewsFolder)){
+                    grunt.log.warn('"'+objPlatform.views[i]+'" folder exist in "'+objPlatform.bower_directory+'/enspire.platform/views/" directory.');
+                }else{
+                    var aryFoundFolders = [];
+
+                    //Get View Screens
+                    var viewsFolderScreens = viewsFolder + '/screens';
+                    if(grunt.file.exists(viewsFolderScreens)) {
+                        aryFoundFolders = [];
+                        grunt.file.recurse(viewsFolderScreens, function callback(abspath, rootdir, subdir, filename) {
+                            if (subdir !== undefined) {
+                                var arySubFolderName = subdir.split('/')[0];
+                                if (aryFoundFolders.indexOf(arySubFolderName) === -1) {
+                                    aryFoundFolders.push(arySubFolderName);
+                                    viewFiles.push({
+                                        expand: true,
+                                        overwrite: false,
+                                        cwd: viewsFolderScreens,
+                                        src: ['*'],
+                                        dest: 'dev/views/screens',
+                                        filter: 'isDirectory'
+                                    });
+                                }
+                            }
+                        });
+                    }
+
+                    //Get View Includes
+                    var viewsFolderIncludes = viewsFolder + '/includes';
+                    if(grunt.file.exists(viewsFolderIncludes)) {
+                        aryFoundFolders = [];
+                        grunt.file.recurse(viewsFolderIncludes, function callback(abspath, rootdir, subdir, filename) {
+                            if (subdir !== undefined) {
+                                var arySubFolderName = subdir.split('/')[0];
+                                if (aryFoundFolders.indexOf(arySubFolderName) === -1) {
+                                    aryFoundFolders.push(arySubFolderName);
+                                    viewFiles.push({
+                                        expand: true,
+                                        overwrite: false,
+                                        cwd: viewsFolderIncludes,
+                                        src: ['*'],
+                                        dest: 'dev/views/includes',
+                                        filter: 'isDirectory'
+                                    });
+                                }
+                            }
+                        });
+                    }
+
+                    //Get View Modals
+                    var viewsFolderModals = viewsFolder + '/modals';
+                    if(grunt.file.exists(viewsFolderModals)) {
+                        aryFoundFolders = [];
+                        grunt.file.recurse(viewsFolderModals, function callback(abspath, rootdir, subdir, filename) {
+                            if (subdir !== undefined) {
+                                var arySubFolderName = subdir.split('/')[0];
+                                if (aryFoundFolders.indexOf(arySubFolderName) === -1) {
+                                    aryFoundFolders.push(arySubFolderName);
+                                    viewFiles.push({
+                                        expand: true,
+                                        overwrite: false,
+                                        cwd: viewsFolderModals,
+                                        src: ['*'],
+                                        dest: 'dev/views/modals',
+                                        filter: 'isDirectory'
+                                    });
+                                }
+                            }
+                        });
+                    }
+
                 }
             }
+
+            grunt.extendConfig({
+                symlink:{
+                    views: {
+                        files: viewFiles
+                    }
+                }
+            });
+
+            grunt.task.run('symlink:views');
         }
 
         if(objPlatform.includes!==undefined){
@@ -271,7 +352,6 @@ module.exports = function(grunt) {
 
 
     });
-
 
 
     //grunt.registerMultiTask('enspire', 'A plugin for specific use with in Enspire Commerce.', function() {

@@ -17,6 +17,7 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-contrib-symlink');
         grunt.loadNpmTasks("grunt-extend-config");
         grunt.loadNpmTasks("grunt-contrib-concat");
+        grunt.loadNpmTasks('grunt-contrib-clean');
         grunt.loadNpmTasks("grunt-contrib-sass");
         grunt.loadNpmTasks('grunt-html-build');
 
@@ -104,6 +105,15 @@ module.exports = function(grunt) {
             }
             objPlatform.theme = grunt.option('theme');
         }
+
+        grunt.extendConfig({
+            clean:{
+                dev:["dev"],
+                after:[".sass-cache","_temp-grunt"]
+            }
+        });
+
+        grunt.task.run('clean:dev');
 
         var themeFiles = [];
         if(objPlatform.ui!==undefined && objPlatform.ui !== ''){
@@ -406,7 +416,7 @@ module.exports = function(grunt) {
 
         grunt.task.run('symlink:views');
         grunt.task.run('htmlbuild:index');
-
+        grunt.task.run('clean:after');
 
     });
 

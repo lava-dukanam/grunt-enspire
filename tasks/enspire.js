@@ -20,6 +20,7 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-contrib-clean');
         grunt.loadNpmTasks("grunt-contrib-sass");
         grunt.loadNpmTasks('grunt-html-build');
+        grunt.loadNpmTasks('grunt-autoprefixer');
 
         // Holds platform.json config
         var objPlatform;
@@ -189,11 +190,20 @@ module.exports = function(grunt) {
                                         "dev/assets/css/ui.css": "_temp-grunt/ui.scss"
                                     }
                                 }
+                            },
+                            autoprefixer: {
+                                options: {
+                                    browsers: ['last 2 versions', 'last 4 Android versions', 'Explorer >= 9']
+                                },
+                                ui:{
+                                   src: "dev/assets/css/ui.css"
+                                }
                             }
                         });
 
                         grunt.task.run('concat:ui');
                         grunt.task.run('sass:ui');
+                        grunt.task.run('autoprefixer:ui');
                     }
 
                     if(objUiConfig.js !== undefined) {

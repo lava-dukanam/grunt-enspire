@@ -138,7 +138,7 @@ module.exports = function(grunt) {
                 }
 
                 grunt.file.recurse(themeFolder, function callback(abspath, rootdir, subdir, filename){
-                    //if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
+                    if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
                 });
             }
 

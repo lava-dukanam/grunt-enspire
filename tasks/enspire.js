@@ -34,9 +34,11 @@ module.exports = function(grunt) {
 
         var viewFiles = [];
         var jsFiles = [];
+        var fontFiles = [];
         var js = [];
         var css = [];
         var scss = [];
+        var fonts = [];
 
         if(grunt.option('commands')){
             grunt.log.writeln('\nOptions:');
@@ -136,7 +138,7 @@ module.exports = function(grunt) {
                 }
 
                 grunt.file.recurse(themeFolder, function callback(abspath, rootdir, subdir, filename){
-                    if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
+                    //if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
                 });
             }
 
@@ -216,6 +218,28 @@ module.exports = function(grunt) {
                             }
                         }
                         js = js.concat(objUiConfig.js);
+                    }
+
+                    if(objUiConfig.fonts !== undefined) {
+                        var lngFonts = objUiConfig.fonts.length;
+                        for(var i=0; i<lngFonts; i++){
+                            if(objUiConfig.fonts[i].substring(1,0)==='!'){
+                                objUiConfig.fonts[i] = '!'+objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.fonts[i].substring(1);
+                            }else{
+                                objUiConfig.fonts[i] = objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.fonts[i];
+                            }
+                        }
+                        fonts = fonts.concat(objUiConfig.fonts);
+
+                        var aryFontsFiles = grunt.file.expand(objUiConfig.fonts);
+                        var lngFontFiles = aryFontsFiles.length;
+                        for(var i=0; i<lngFontFiles; i++){
+                            fontFiles.push({
+                                overwrite: false,
+                                src: [aryFontsFiles[i]],
+                                dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/enspire.ui/src/fonts/',''))
+                            });
+                        }
                     }
                     break;
                 case 'ionic':
@@ -418,12 +442,16 @@ module.exports = function(grunt) {
                     files: viewFiles
                 },
                 js:{
-                    files: viewFiles
+                    files: jsFiles
+                },
+                fonts:{
+                    files: fontFiles
                 }
             }
         });
 
         grunt.task.run('symlink:views');
+        grunt.task.run('symlink:fonts');
         grunt.task.run('htmlbuild:index');
         grunt.task.run('clean:after');
 

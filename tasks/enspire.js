@@ -35,6 +35,7 @@ module.exports = function(grunt) {
         var viewFiles = [];
         var jsFiles = [];
         var fontFiles = [];
+        var imageFiles = [];
         var js = [];
         var css = [];
         var scss = [];
@@ -137,9 +138,37 @@ module.exports = function(grunt) {
                     return false;
                 }
 
-                grunt.file.recurse(themeFolder, function callback(abspath, rootdir, subdir, filename){
-                    if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
-                });
+                var themeConfig = themeFolder+'.enspirerc';
+                if(grunt.file.exists(themeConfig)){
+                    var objThemeConfig = grunt.file.readJSON(themeConfig);
+
+                    if(objThemeConfig.scss !== undefined){
+                        var aryThemeScssFiles = grunt.file.expand({cwd:themeFolder},objThemeConfig.scss);
+                        var lngThemeScssFiles = aryThemeScssFiles.length;
+                        for(var i=0; i<lngThemeScssFiles; i++){
+                            themeFiles.push(themeFolder+aryThemeScssFiles[i]);
+                        }
+                    }
+
+                    if(objThemeConfig.images !== undefined){
+                        var aryThemeImageFiles = grunt.file.expand({cwd:themeFolder},objThemeConfig.images);
+
+                        var lngThemeImageFiles = aryThemeImageFiles.length;
+                        for(var i=0; i<lngThemeImageFiles; i++){
+                            console.log(aryThemeImageFiles[i])
+                            imageFiles.push({
+                                overwrite: false,
+                                src: [themeFolder+aryThemeImageFiles[i]],
+                                dest: 'dev/assets/images/'
+                            });
+                        }
+                    }
+
+                }else{
+                    grunt.file.recurse(themeFolder, function callback(abspath, rootdir, subdir, filename){
+                        if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
+                    });
+                }
             }
 
             switch(objPlatform.ui){
@@ -209,6 +238,11 @@ module.exports = function(grunt) {
                     }
 
                     if(objUiConfig.js !== undefined) {
+                        if(!Array.isArray(objUiConfig.js)){
+                            grunt.log.error('"'+uiConfig+'" js property must be in an array format.');
+                            return false;
+                        }
+
                         var lngJs = objUiConfig.js.length;
                         for(var i=0; i<lngJs; i++){
                             if(objUiConfig.js[i].substring(1,0)==='!'){
@@ -221,6 +255,11 @@ module.exports = function(grunt) {
                     }
 
                     if(objUiConfig.fonts !== undefined) {
+                        if(!Array.isArray(objUiConfig.fonts)){
+                            grunt.log.error('"'+uiConfig+'" fonts property must be in an array format.');
+                            return false;
+                        }
+
                         var lngFonts = objUiConfig.fonts.length;
                         for(var i=0; i<lngFonts; i++){
                             if(objUiConfig.fonts[i].substring(1,0)==='!'){
@@ -446,12 +485,16 @@ module.exports = function(grunt) {
                 },
                 fonts:{
                     files: fontFiles
+                },
+                images:{
+                    files: imageFiles
                 }
             }
         });
 
         grunt.task.run('symlink:views');
         grunt.task.run('symlink:fonts');
+        grunt.task.run('symlink:images');
         grunt.task.run('htmlbuild:index');
         grunt.task.run('clean:after');
 

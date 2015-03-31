@@ -119,7 +119,8 @@ module.exports = function(grunt) {
 
         grunt.task.run('clean:dev');
 
-        var themeFiles = [];
+        var themeScssFiles = [];
+        var themeScssOtherFiles = [];
         if(objPlatform.ui!==undefined && objPlatform.ui !== ''){
             if((objPlatform.theme===undefined || objPlatform.theme==='')){
                 if(objPlatform.theme===undefined) grunt.log.warn('"theme" is undefined in the "platform.json" file');
@@ -146,7 +147,11 @@ module.exports = function(grunt) {
                         var aryThemeScssFiles = grunt.file.expand({cwd:themeFolder},objThemeConfig.scss);
                         var lngThemeScssFiles = aryThemeScssFiles.length;
                         for(var i=0; i<lngThemeScssFiles; i++){
-                            themeFiles.push(themeFolder+aryThemeScssFiles[i]);
+                            if(aryThemeScssFiles[i].indexOf('theme.scss') !== -1 || aryThemeScssFiles[i].indexOf('theme.sass') !== -1){
+                                themeScssFiles.push(themeFolder+aryThemeScssFiles[i]);
+                            }else{
+                                themeScssOtherFiles.push(themeFolder+aryThemeScssFiles[i]);
+                            }
                         }
                     }
 
@@ -166,7 +171,13 @@ module.exports = function(grunt) {
 
                 }else{
                     grunt.file.recurse(themeFolder, function callback(abspath, rootdir, subdir, filename){
-                        if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)) themeFiles.push(abspath);
+                        if(filename!==undefined && (filename.indexOf('.scss', filename.length - 5) !== -1 || filename.indexOf('.sass', filename.length - 5) !== -1)){
+                            if(filename.indexOf('theme.scss') !== -1 || filename.indexOf('theme.sass') !== -1){
+                                themeScssFiles.push(abspath);
+                            }else{
+                                themeScssOtherFiles.push(abspath);
+                            }
+                        }
                     });
                 }
             }
@@ -205,8 +216,10 @@ module.exports = function(grunt) {
                                 }
                             }
                         }
-                        var args = [themeInsertLocation, 1].concat(themeFiles);
+                        var args = [themeInsertLocation, 1].concat(themeScssFiles);
                         Array.prototype.splice.apply(objUiConfig.scss, args);
+
+                        objUiConfig.scss = objUiConfig.scss.concat(themeScssOtherFiles);
 
                         grunt.extendConfig({
                             concat:{

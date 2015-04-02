@@ -160,7 +160,6 @@ module.exports = function(grunt) {
 
                         var lngThemeImageFiles = aryThemeImageFiles.length;
                         for(var i=0; i<lngThemeImageFiles; i++){
-                            console.log(aryThemeImageFiles[i])
                             imageFiles.push({
                                 overwrite: false,
                                 src: [themeFolder+aryThemeImageFiles[i]],

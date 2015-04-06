@@ -181,16 +181,16 @@ module.exports = function(grunt) {
                 }
             }
 
-            switch(objPlatform.ui){
-                case 'enspire.ui':
-                    if(!grunt.file.exists(objPlatform.bower_directory+'/enspire.ui/')){
-                        grunt.log.error('"enspire.ui" folder was not found in your '+objPlatform.bower_directory+' directory.');
+            //switch(objPlatform.ui){
+            //    case 'enspire.ui':
+                    if(!grunt.file.exists(objPlatform.bower_directory+'/'+objPlatform.ui+'/')){
+                        grunt.log.error('"'+objPlatform.ui+'" folder was not found in your '+objPlatform.bower_directory+' directory.');
                         return false;
                     }
 
-                    var uiConfig = objPlatform.bower_directory+'/enspire.ui/.enspirerc';
+                    var uiConfig = objPlatform.bower_directory+'/'+objPlatform.ui+'/.enspirerc';
                     if(!grunt.file.exists(uiConfig)){
-                        grunt.log.error('".enspirerc" file is missing from the root of '+objPlatform.bower_directory+'/enspire.ui/ directory');
+                        grunt.log.error('".enspirerc" file is missing from the root of '+objPlatform.bower_directory+'/'+objPlatform.ui+'/ directory');
                         return false;
                     }
 
@@ -204,19 +204,24 @@ module.exports = function(grunt) {
 
                         var lngScss = objUiConfig.scss.length;
                         var themeInsertLocation = 0;
+                        var bolThemeInsertFound = false;
                         for(var i=0; i<lngScss; i++){
                             if(objUiConfig.scss[i] === '{% _THEME_ %}'){
                                 themeInsertLocation = i;
+                                bolThemeInsertFound = true;
                             }else{
                                 if(objUiConfig.scss[i].substring(1,0)==='!'){
-                                    objUiConfig.scss[i] = '!'+objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.scss[i].substring(1);
+                                    objUiConfig.scss[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i].substring(1);
                                 }else{
-                                    objUiConfig.scss[i] = objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.scss[i];
+                                    objUiConfig.scss[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i];
                                 }
                             }
                         }
-                        var args = [themeInsertLocation, 1].concat(themeScssFiles);
-                        Array.prototype.splice.apply(objUiConfig.scss, args);
+
+                        if(bolThemeInsertFound){
+                            var args = [themeInsertLocation, 1].concat(themeScssFiles);
+                            Array.prototype.splice.apply(objUiConfig.scss, args);
+                        }
 
                         objUiConfig.scss = objUiConfig.scss.concat(themeScssOtherFiles);
 
@@ -230,7 +235,7 @@ module.exports = function(grunt) {
                             sass:{
                                 ui: {
                                     files: {
-                                        "dev/assets/css/ui.css": "_temp-grunt/ui.scss"
+                                        "dev/assets/css/ui.css": objUiConfig.scss
                                     }
                                 }
                             },
@@ -244,7 +249,7 @@ module.exports = function(grunt) {
                             }
                         });
 
-                        grunt.task.run('concat:ui');
+                        //grunt.task.run('concat:ui');
                         grunt.task.run('sass:ui');
                         grunt.task.run('autoprefixer:ui');
                     }
@@ -258,9 +263,9 @@ module.exports = function(grunt) {
                         var lngJs = objUiConfig.js.length;
                         for(var i=0; i<lngJs; i++){
                             if(objUiConfig.js[i].substring(1,0)==='!'){
-                                objUiConfig.js[i] = '!'+objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.js[i].substring(1);
+                                objUiConfig.js[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i].substring(1);
                             }else{
-                                objUiConfig.js[i] = objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.js[i];
+                                objUiConfig.js[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i];
                             }
                         }
                         js = js.concat(objUiConfig.js);
@@ -275,9 +280,9 @@ module.exports = function(grunt) {
                         var lngFonts = objUiConfig.fonts.length;
                         for(var i=0; i<lngFonts; i++){
                             if(objUiConfig.fonts[i].substring(1,0)==='!'){
-                                objUiConfig.fonts[i] = '!'+objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.fonts[i].substring(1);
+                                objUiConfig.fonts[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i].substring(1);
                             }else{
-                                objUiConfig.fonts[i] = objPlatform.bower_directory+'/enspire.ui/'+objUiConfig.fonts[i];
+                                objUiConfig.fonts[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i];
                             }
                         }
                         fonts = fonts.concat(objUiConfig.fonts);
@@ -288,14 +293,14 @@ module.exports = function(grunt) {
                             fontFiles.push({
                                 overwrite: false,
                                 src: [aryFontsFiles[i]],
-                                dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/enspire.ui/src/fonts/',''))
+                                dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))
                             });
                         }
                     }
-                    break;
-                case 'ionic':
-                    break;
-            }
+            //        break;
+            //    case 'ionic':
+            //        break;
+            //}
         }else{
             grunt.log.writeln('This project is using a custom UI, as no UI framework has been defined.');
         }

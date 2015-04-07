@@ -133,9 +133,9 @@ module.exports = function(grunt) {
                     return false;
                 }
 
-                var themeFolder = objPlatform.bower_directory+'/enspire.platform/themes/'+objPlatform.theme+'/';
+                var themeFolder = objPlatform.bower_directory+'/enspire.platform/themes/'+objPlatform.theme+'/'+objPlatform.ui+'/';
                 if(!grunt.file.exists(themeFolder)){
-                    grunt.log.error('"'+objPlatform.theme+'" theme does not exist in "'+folderThemes+'" directory.');
+                    grunt.log.error('"'+objPlatform.theme+'" theme does not exist for '+objPlatform.ui+' in "'+folderThemes+'" directory.');
                     return false;
                 }
 
@@ -181,50 +181,51 @@ module.exports = function(grunt) {
                 }
             }
 
-            //switch(objPlatform.ui){
-            //    case 'enspire.ui':
-                    if(!grunt.file.exists(objPlatform.bower_directory+'/'+objPlatform.ui+'/')){
-                        grunt.log.error('"'+objPlatform.ui+'" folder was not found in your '+objPlatform.bower_directory+' directory.');
-                        return false;
+
+            if(!grunt.file.exists(objPlatform.bower_directory+'/'+objPlatform.ui+'/')){
+                grunt.log.error('"'+objPlatform.ui+'" folder was not found in your '+objPlatform.bower_directory+' directory.');
+                return false;
+            }
+
+            var uiConfig = objPlatform.bower_directory+'/'+objPlatform.ui+'/.enspirerc';
+            if(!grunt.file.exists(uiConfig)){
+                grunt.log.error('".enspirerc" file is missing from the root of '+objPlatform.bower_directory+'/'+objPlatform.ui+'/ directory');
+                return false;
+            }
+
+            var objUiConfig = grunt.file.readJSON(uiConfig);
+
+            if(objUiConfig.scss !== undefined){
+                if(!Array.isArray(objUiConfig.scss)){
+                    grunt.log.error('"'+uiConfig+'" scss property must be in an array format.');
+                    return false;
+                }
+
+                var lngScss = objUiConfig.scss.length;
+                var themeInsertLocation = 0;
+                var bolThemeInsertFound = false;
+                for(var i=0; i<lngScss; i++){
+                    if(objUiConfig.scss[i] === '{% _THEME_ %}'){
+                        themeInsertLocation = i;
+                        bolThemeInsertFound = true;
+                    }else{
+                        if(objUiConfig.scss[i].substring(1,0)==='!'){
+                            objUiConfig.scss[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i].substring(1);
+                        }else{
+                            objUiConfig.scss[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i];
+                        }
                     }
+                }
 
-                    var uiConfig = objPlatform.bower_directory+'/'+objPlatform.ui+'/.enspirerc';
-                    if(!grunt.file.exists(uiConfig)){
-                        grunt.log.error('".enspirerc" file is missing from the root of '+objPlatform.bower_directory+'/'+objPlatform.ui+'/ directory');
-                        return false;
-                    }
+                if(bolThemeInsertFound){
+                    var args = [themeInsertLocation, 1].concat(themeScssFiles);
+                    Array.prototype.splice.apply(objUiConfig.scss, args);
+                }
 
-                    var objUiConfig = grunt.file.readJSON(uiConfig);
+                objUiConfig.scss = objUiConfig.scss.concat(themeScssOtherFiles);
 
-                    if(objUiConfig.scss !== undefined){
-                        if(!Array.isArray(objUiConfig.scss)){
-                            grunt.log.error('"'+uiConfig+'" scss property must be in an array format.');
-                            return false;
-                        }
-
-                        var lngScss = objUiConfig.scss.length;
-                        var themeInsertLocation = 0;
-                        var bolThemeInsertFound = false;
-                        for(var i=0; i<lngScss; i++){
-                            if(objUiConfig.scss[i] === '{% _THEME_ %}'){
-                                themeInsertLocation = i;
-                                bolThemeInsertFound = true;
-                            }else{
-                                if(objUiConfig.scss[i].substring(1,0)==='!'){
-                                    objUiConfig.scss[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i].substring(1);
-                                }else{
-                                    objUiConfig.scss[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.scss[i];
-                                }
-                            }
-                        }
-
-                        if(bolThemeInsertFound){
-                            var args = [themeInsertLocation, 1].concat(themeScssFiles);
-                            Array.prototype.splice.apply(objUiConfig.scss, args);
-                        }
-
-                        objUiConfig.scss = objUiConfig.scss.concat(themeScssOtherFiles);
-
+                switch(objPlatform.ui){
+                    case 'enspire.ui':
                         grunt.extendConfig({
                             concat:{
                                 ui: {
@@ -235,72 +236,99 @@ module.exports = function(grunt) {
                             sass:{
                                 ui: {
                                     files: {
-                                        "dev/assets/css/ui.css": objUiConfig.scss
+                                        "dev/assets/css/ui.css": "_temp-grunt/ui.scss"
                                     }
-                                }
-                            },
-                            autoprefixer: {
-                                options: {
-                                    browsers: ['last 2 versions', 'last 4 Android versions', 'Explorer >= 9']
-                                },
-                                ui:{
-                                   src: "dev/assets/css/ui.css"
                                 }
                             }
                         });
 
-                        //grunt.task.run('concat:ui');
-                        grunt.task.run('sass:ui');
-                        grunt.task.run('autoprefixer:ui');
-                    }
-
-                    if(objUiConfig.js !== undefined) {
-                        if(!Array.isArray(objUiConfig.js)){
-                            grunt.log.error('"'+uiConfig+'" js property must be in an array format.');
-                            return false;
-                        }
-
-                        var lngJs = objUiConfig.js.length;
-                        for(var i=0; i<lngJs; i++){
-                            if(objUiConfig.js[i].substring(1,0)==='!'){
-                                objUiConfig.js[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i].substring(1);
-                            }else{
-                                objUiConfig.js[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i];
+                        break;
+                    case 'ionic':
+                        grunt.extendConfig({
+                            concat:{
+                                ui: {
+                                    src: objUiConfig.scss,
+                                    dest: objPlatform.bower_directory+'/'+objPlatform.ui+'/scss/ui.scss'
+                                }
+                            },
+                            sass:{
+                                ui: {
+                                    files: {
+                                        "dev/assets/css/ui.css": objPlatform.bower_directory+'/'+objPlatform.ui+'/scss/ui.scss'
+                                    }
+                                }
                             }
-                        }
-                        js = js.concat(objUiConfig.js);
-                    }
-
-                    if(objUiConfig.fonts !== undefined) {
-                        if(!Array.isArray(objUiConfig.fonts)){
-                            grunt.log.error('"'+uiConfig+'" fonts property must be in an array format.');
-                            return false;
-                        }
-
-                        var lngFonts = objUiConfig.fonts.length;
-                        for(var i=0; i<lngFonts; i++){
-                            if(objUiConfig.fonts[i].substring(1,0)==='!'){
-                                objUiConfig.fonts[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i].substring(1);
-                            }else{
-                                objUiConfig.fonts[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i];
-                            }
-                        }
-                        fonts = fonts.concat(objUiConfig.fonts);
-
-                        var aryFontsFiles = grunt.file.expand(objUiConfig.fonts);
-                        var lngFontFiles = aryFontsFiles.length;
-                        for(var i=0; i<lngFontFiles; i++){
-                            fontFiles.push({
-                                overwrite: false,
-                                src: [aryFontsFiles[i]],
-                                dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))
-                            });
+                        });
+                        break;
+                }
+                grunt.extendConfig({
+                    autoprefixer: {
+                        options: {
+                            browsers: ['last 2 versions', 'last 4 Android versions', 'Explorer >= 9']
+                        },
+                        ui:{
+                            src: "dev/assets/css/ui.css"
                         }
                     }
-            //        break;
-            //    case 'ionic':
-            //        break;
-            //}
+                });
+                grunt.task.run('concat:ui');
+                grunt.task.run('sass:ui');
+                grunt.task.run('autoprefixer:ui');
+            }
+
+            if(objUiConfig.js !== undefined) {
+                if(!Array.isArray(objUiConfig.js)){
+                    grunt.log.error('"'+uiConfig+'" js property must be in an array format.');
+                    return false;
+                }
+
+                var lngJs = objUiConfig.js.length;
+                for(var i=0; i<lngJs; i++){
+                    if(objUiConfig.js[i].substring(1,0)==='!'){
+                        objUiConfig.js[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i].substring(1);
+                    }else{
+                        objUiConfig.js[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.js[i];
+                    }
+                }
+                js = js.concat(objUiConfig.js);
+            }
+
+            if(objUiConfig.fonts !== undefined) {
+                if(!Array.isArray(objUiConfig.fonts)){
+                    grunt.log.error('"'+uiConfig+'" fonts property must be in an array format.');
+                    return false;
+                }
+
+                var lngFonts = objUiConfig.fonts.length;
+                for(var i=0; i<lngFonts; i++){
+                    if(objUiConfig.fonts[i].substring(1,0)==='!'){
+                        objUiConfig.fonts[i] = '!'+objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i].substring(1);
+                    }else{
+                        objUiConfig.fonts[i] = objPlatform.bower_directory+'/'+objPlatform.ui+'/'+objUiConfig.fonts[i];
+                    }
+                }
+                fonts = fonts.concat(objUiConfig.fonts);
+
+                var aryFontsFiles = grunt.file.expand(objUiConfig.fonts);
+                var lngFontFiles = aryFontsFiles.length;
+                for(var i=0; i<lngFontFiles; i++){
+                    //VERY NASTY WAY OF DOING IT< BUT RAN OUT OF TIME.
+                    if(objPlatform.ui === 'enspire.ui'){
+                        fontFiles.push({
+                            overwrite: false,
+                            src: [aryFontsFiles[i]],
+                            dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))
+                        });
+                    }else{
+                        fontFiles.push({
+                            overwrite: false,
+                            src: [aryFontsFiles[i]],
+                            dest: 'dev/assets/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/release/fonts/',''))
+                        });
+                    }
+                }
+            }
+
         }else{
             grunt.log.writeln('This project is using a custom UI, as no UI framework has been defined.');
         }

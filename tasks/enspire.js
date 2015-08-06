@@ -380,6 +380,9 @@ module.exports = function(grunt) {
                             }
                         }
                     }
+
+                    //Get JS Includes
+                    jsFiles = jsFiles.concat(processJS(moduleFolder,moduleName));
                 }
             }
         }
@@ -513,7 +516,7 @@ module.exports = function(grunt) {
                         beautify: true,
                         relative: true,
                         scripts: {
-                            bundle: objPlatform.includes.js.concat(js).concat(['src/js/**/*.js'])
+                            bundle: objPlatform.includes.js.concat(js).concat(['dev/assets/js/**/*.js']).concat(['src/js/**/*.js'])
                         },
                         styles: {
                             bundle: ['dev/assets/css/ui.css']
@@ -537,6 +540,7 @@ module.exports = function(grunt) {
             }
         });
 
+        grunt.task.run('symlink:js');
         grunt.task.run('symlink:views');
         grunt.task.run('symlink:fonts');
         grunt.task.run('symlink:images');
@@ -579,8 +583,37 @@ module.exports = function(grunt) {
         return viewFiles;
     }
 
-    function processJS(){
-
+    function processJS(dir,module){
+        var jsFiles = [];
+        var jsFolder = dir;
+        if(grunt.file.exists(jsFolder)) {
+            var aryFoundFolders = [];
+            grunt.file.recurse(jsFolder, function callback(abspath, rootdir, subdir, filename) {
+                if (subdir !== undefined) {
+                    var arySubFolderName = subdir.split('/');
+                    if (aryFoundFolders.indexOf(arySubFolderName[0]) === -1) {
+                        aryFoundFolders.push(arySubFolderName[0]);
+                        jsFiles.push({
+                            expand: true,
+                            overwrite: false,
+                            cwd: jsFolder,
+                            src: ['*'],
+                            dest: 'dev/assets/js/modules/'+module+'/',
+                            filter: 'isDirectory'
+                        });
+                    }
+                } else {
+                    jsFiles.push({
+                        expand: true,
+                        overwrite: false,
+                        cwd: jsFolder,
+                        src: [filename],
+                        dest: 'dev/assets/js/modules/'+module+'/'
+                    });
+                }
+            });
+        }
+        return jsFiles;
     }
 
 };

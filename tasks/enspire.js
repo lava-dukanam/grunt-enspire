@@ -17,10 +17,15 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-contrib-symlink');
         grunt.loadNpmTasks("grunt-extend-config");
         grunt.loadNpmTasks("grunt-contrib-concat");
+        grunt.loadNpmTasks('grunt-contrib-cssmin');
+        grunt.loadNpmTasks('grunt-contrib-uglify');
+        grunt.loadNpmTasks('grunt-contrib-copy');
         grunt.loadNpmTasks('grunt-contrib-clean');
+        grunt.loadNpmTasks('grunt-ng-annotate');
         grunt.loadNpmTasks("grunt-contrib-sass");
         grunt.loadNpmTasks('grunt-html-build');
         grunt.loadNpmTasks('grunt-autoprefixer');
+        grunt.loadNpmTasks('grunt-angular-templates');
 
         // Holds platform.json config
         var objPlatform;
@@ -36,6 +41,8 @@ module.exports = function(grunt) {
         var jsFiles = [];
         var fontFiles = [];
         var imageFiles = [];
+        var copyFiles = [];
+        var ng_templates = [];
         var js = [];
         var css = [];
         var scss = [];
@@ -113,11 +120,13 @@ module.exports = function(grunt) {
         grunt.extendConfig({
             clean:{
                 dev:["dev"],
+                dist:["dist"],
                 after:[".sass-cache","_temp-grunt"]
             }
         });
 
         grunt.task.run('clean:dev');
+        grunt.task.run('clean:dist');
 
         var themeScssFiles = [];
         var themeScssOtherFiles = [];
@@ -161,9 +170,15 @@ module.exports = function(grunt) {
                         var lngThemeImageFiles = aryThemeImageFiles.length;
                         for(var i=0; i<lngThemeImageFiles; i++){
                             imageFiles.push({
-                                overwrite: false,
-                                src: [themeFolder+aryThemeImageFiles[i]],
-                                dest: 'dev/assets/images/'
+                                "overwrite": false,
+                                "src": [themeFolder+aryThemeImageFiles[i]],
+                                "dest": 'dev/assets/images/'
+                            });
+                            copyFiles.push({
+                                "expand":true,
+                                "cwd":themeFolder,
+                                "src": [aryThemeImageFiles[i]],
+                                "dest": 'dist/assets/'
                             });
                         }
                     }
@@ -234,9 +249,14 @@ module.exports = function(grunt) {
                                 }
                             },
                             sass:{
-                                ui: {
+                                dev: {
                                     files: {
                                         "dev/assets/css/ui.css": "_temp-grunt/ui.scss"
+                                    }
+                                },
+                                dist: {
+                                    files: {
+                                        "_temp-grunt/ui.css": "_temp-grunt/ui.scss"
                                     }
                                 }
                             }
@@ -252,9 +272,14 @@ module.exports = function(grunt) {
                                 }
                             },
                             sass:{
-                                ui: {
+                                dev: {
                                     files: {
                                         "dev/assets/css/ui.css": objPlatform.bower_directory+'/'+objPlatform.ui+'/scss/ui.scss'
+                                    }
+                                },
+                                dist: {
+                                    files: {
+                                        "_temp-grunt/ui.css": objPlatform.bower_directory+'/'+objPlatform.ui+'/scss/ui.scss'
                                     }
                                 }
                             }
@@ -266,14 +291,19 @@ module.exports = function(grunt) {
                         options: {
                             browsers: ['last 2 versions', 'last 4 Android versions', 'Explorer >= 9']
                         },
-                        ui:{
+                        dev:{
                             src: "dev/assets/css/ui.css"
+                        },
+                        dist:{
+                            src: "_temp-grunt/ui.css"
                         }
                     }
                 });
                 grunt.task.run('concat:ui');
-                grunt.task.run('sass:ui');
-                grunt.task.run('autoprefixer:ui');
+                grunt.task.run('sass:dev');
+                grunt.task.run('sass:dist');
+                grunt.task.run('autoprefixer:dev');
+                grunt.task.run('autoprefixer:dist');
             }
 
             if(objUiConfig.js !== undefined) {
@@ -315,15 +345,27 @@ module.exports = function(grunt) {
                     //VERY NASTY WAY OF DOING IT< BUT RAN OUT OF TIME.
                     if(objPlatform.ui === 'enspire.ui'){
                         fontFiles.push({
-                            overwrite: false,
-                            src: [aryFontsFiles[i]],
-                            dest: 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))
+                            "overwrite": false,
+                            "src": [aryFontsFiles[i]],
+                            "dest": 'dev/assets/css/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))
+                        });
+                        copyFiles.push({
+                            "expand":true,
+                            "cwd":objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',
+                            "src": [(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/src/fonts/',''))],
+                            "dest": 'dist/assets/css/fonts/'
                         });
                     }else{
                         fontFiles.push({
-                            overwrite: false,
-                            src: [aryFontsFiles[i]],
-                            dest: 'dev/assets/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/release/fonts/',''))
+                            "overwrite": false,
+                            "src": [aryFontsFiles[i]],
+                            "dest": 'dev/assets/fonts/'+(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/release/fonts/',''))
+                        });
+                        copyFiles.push({
+                            "expand":true,
+                            "cwd":objPlatform.bower_directory+'/'+objPlatform.ui+'/release/fonts/',
+                            "src": [(aryFontsFiles[i].replace(objPlatform.bower_directory+'/'+objPlatform.ui+'/release/fonts/',''))],
+                            "dest": 'dist/assets/fonts/'
                         });
                     }
                 }
@@ -416,6 +458,9 @@ module.exports = function(grunt) {
                     //Get View Modals
                     viewFiles = viewFiles.concat(processViews(viewsFolder,'modals'));
 
+                    //Get Templates
+                    ng_templates = ng_templates.concat(processTemplates(viewsFolder));
+
                 }
             }
         }
@@ -500,6 +545,9 @@ module.exports = function(grunt) {
 
             //Get View Modals
             viewFiles = viewFiles.concat(processViews('src/views','modals'));
+
+            //Get Templates
+            ng_templates = ng_templates.concat(processTemplates('src/views'));
         }
 
         if(!grunt.file.exists('src/index.html')){
@@ -509,7 +557,7 @@ module.exports = function(grunt) {
 
         grunt.extendConfig({
             htmlbuild:{
-                index: {
+                dev: {
                     src: 'src/index.html',
                     dest: 'dev',
                     options: {
@@ -521,6 +569,51 @@ module.exports = function(grunt) {
                         styles: {
                             bundle: ['dev/assets/css/ui.css']
                         }
+                    }
+                },
+                dist: {
+                    src: 'src/index.html',
+                    dest: 'dist',
+                    options: {
+                        beautify: true,
+                        relative: true,
+                        scripts: {
+                            bundle: ['dist/assets/js/all.min.js','dist/assets/js/templates.js']
+                        },
+                        styles: {
+                            bundle: ['dist/assets/css/all.min.css']
+                        }
+                    }
+                }
+            },
+            cssmin:{
+                dist:{
+                    files:{
+                        'dist/assets/css/all.min.css':['_temp-grunt/ui.css']
+                    }
+                }
+            },
+            concat:{
+                dist:{
+                    files:{
+                        '_temp-grunt/all.js':objPlatform.includes.js.concat(js).concat(['_temp-grunt/ng.js'])
+                    }
+                }
+            },
+            ngAnnotate:{
+                dist:{
+                    files:{
+                        "_temp-grunt/ng.js": ['dev/assets/js/**/*.js','src/js/**/*.js','_temp-grunt/templates.js']
+                    }
+                }
+            },
+            uglify:{
+                dist:{
+                    options: {
+                        mangle: false
+                    },
+                    files:{
+                        'dist/assets/js/all.min.js': ['_temp-grunt/all.js']
                     }
                 }
             },
@@ -537,6 +630,42 @@ module.exports = function(grunt) {
                 images:{
                     files: imageFiles
                 }
+            },
+            copy:{
+                dist:{
+                    files: copyFiles
+                }
+            },
+            ngtemplates:{
+                dist: {
+                    src: ng_templates,
+                    dest: '_temp-grunt/templates.js',
+                    options: {
+                        module:'app',
+                        prefix: '',
+                        htmlmin: {
+                            collapseBooleanAttributes: true,
+                            collapseWhitespace: true,
+                            removeComments: true // Only if you don't use comment directives!
+                        },
+                        url: function(url) {
+                            //console.warn();
+                            var aryUrl = url.split('/modals/');
+                            if(aryUrl.length>1){
+                                return 'views/modals/'+aryUrl[1];
+                            }
+                            aryUrl = url.split('/screens/');
+                            if(aryUrl.length>1){
+                                return 'views/screens/'+aryUrl[1];
+                            }
+                            aryUrl = url.split('/includes/');
+                            if(aryUrl.length>1){
+                                return 'views/includes/'+aryUrl[1];
+                            }
+                            return url;
+                        }
+                    }
+                }
             }
         });
 
@@ -544,11 +673,71 @@ module.exports = function(grunt) {
         grunt.task.run('symlink:views');
         grunt.task.run('symlink:fonts');
         grunt.task.run('symlink:images');
-        grunt.task.run('htmlbuild:index');
+        grunt.task.run('copy:dist');
+        grunt.task.run('ngtemplates:dist');
+        grunt.task.run('ngAnnotate:dist');
+        grunt.task.run('concat:dist');
+        grunt.task.run('uglify:dist');
+        grunt.task.run('cssmin:dist');
+        grunt.task.run('htmlbuild:dev');
+        grunt.task.run('htmlbuild:dist');
         grunt.task.run('clean:after');
 
     });
 
+
+    function processTemplates(dir){
+        var templateFiles = [];
+
+        function strEndsWith(str, suffix) {
+            return str.match(suffix+"$")==suffix;
+        }
+        if(grunt.file.exists(dir)) {
+            var i = 0
+            grunt.file.recurse(dir, function callback(abspath, rootdir, subdir, filename) {
+                if(strEndsWith(abspath,'.html') || strEndsWith(abspath,'.htm')){
+                    templateFiles.push(abspath);
+                    //var tt = {
+                    //    ngtemplates: {}
+                    //};
+                    //tt.ngtemplates["dist"+i] = {
+                    //    src: [abspath],
+                    //    dest: '_temp-grunt/templates.js',
+                    //    options: {
+                    //        module: 'app',
+                    //        prefix: '',
+                    //        htmlmin: {
+                    //            collapseBooleanAttributes: true,
+                    //            collapseWhitespace: true,
+                    //            removeComments: true // Only if you don't use comment directives!
+                    //        },
+                    //        url: function (url) {
+                    //            //console.warn();
+                    //            var aryUrl = url.split('/modals/');
+                    //            if (aryUrl.length > 1) {
+                    //                return 'views/modals/' + aryUrl[1];
+                    //            }
+                    //            aryUrl = url.split('/screens/');
+                    //            if (aryUrl.length > 1) {
+                    //                return 'views/screens/' + aryUrl[1];
+                    //            }
+                    //            aryUrl = url.split('/includes/');
+                    //            if (aryUrl.length > 1) {
+                    //                return 'views/includes/' + aryUrl[1];
+                    //            }
+                    //            return url;
+                    //        }
+                    //    }
+                    //};
+                    //
+                    //grunt.extendConfig(tt);
+                    //grunt.task.run('ngtemplates:dist'+i);
+                    //i++;
+                }
+            });
+        }
+        return templateFiles;
+    }
 
     function processViews(dir,type){
         var viewFiles = [];

@@ -1,7 +1,7 @@
 {
   "name": "grunt-enspire",
   "description": "A plugin for specific use with in Enspire Commerce.",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "homepage": "https://github.com/jasonfutch/grunt-enspire",
   "author": {
     "name": "jasonfutch",

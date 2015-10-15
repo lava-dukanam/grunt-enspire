@@ -26,6 +26,7 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-html-build');
         grunt.loadNpmTasks('grunt-autoprefixer');
         grunt.loadNpmTasks('grunt-angular-templates');
+        grunt.loadNpmTasks('grunt-strip-code');
 
         // Holds platform.json config
         var objPlatform;
@@ -126,7 +127,7 @@ module.exports = function(grunt) {
         });
 
         grunt.task.run('clean:dev');
-        grunt.task.run('clean:dist');
+        if(arg1==='dist') grunt.task.run('clean:dist');
 
         var themeScssFiles = [];
         var themeScssOtherFiles = [];
@@ -301,9 +302,9 @@ module.exports = function(grunt) {
                 });
                 grunt.task.run('concat:ui');
                 grunt.task.run('sass:dev');
-                grunt.task.run('sass:dist');
+                if(arg1==='dist') grunt.task.run('sass:dist');
                 grunt.task.run('autoprefixer:dev');
-                grunt.task.run('autoprefixer:dist');
+                if(arg1==='dist') grunt.task.run('autoprefixer:dist');
             }
 
             if(objUiConfig.js !== undefined) {
@@ -555,7 +556,27 @@ module.exports = function(grunt) {
             return false;
         }
 
+        var mode = (arg1==='dist') ? 'prod' : 'dev';
+
         grunt.extendConfig({
+            strip_code: {
+                dev:{
+                    options : {
+                        pattern : /<!-- env:dist -->[\s\S]*?<!-- env:dist:end -->/g
+                    },
+                    files: [
+                        {src: 'dev/index.html', dest: 'dev/index.html'}
+                    ]
+                },
+                dist : {
+                    options : {
+                        pattern : /<!-- env:dev -->[\s\S]*?<!-- env:dev:end -->/g
+                    },
+                    files: [
+                        {src: 'dist/index.html', dest: 'dist/index.html'}
+                    ]
+                }
+            },
             htmlbuild:{
                 dev: {
                     src: 'src/index.html',
@@ -673,14 +694,18 @@ module.exports = function(grunt) {
         grunt.task.run('symlink:views');
         grunt.task.run('symlink:fonts');
         grunt.task.run('symlink:images');
-        grunt.task.run('copy:dist');
-        grunt.task.run('ngtemplates:dist');
-        grunt.task.run('ngAnnotate:dist');
-        grunt.task.run('concat:dist');
-        grunt.task.run('uglify:dist');
-        grunt.task.run('cssmin:dist');
+        if(arg1==='dist'){
+            grunt.task.run('copy:dist');
+            grunt.task.run('ngtemplates:dist');
+            grunt.task.run('ngAnnotate:dist');
+            grunt.task.run('concat:dist');
+            grunt.task.run('uglify:dist');
+            grunt.task.run('cssmin:dist');
+            grunt.task.run('htmlbuild:dist');
+            grunt.task.run('strip_code:dist');
+        }
         grunt.task.run('htmlbuild:dev');
-        grunt.task.run('htmlbuild:dist');
+        grunt.task.run('strip_code:dev');
         grunt.task.run('clean:after');
 
     });

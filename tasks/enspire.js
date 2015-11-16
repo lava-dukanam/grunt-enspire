@@ -27,6 +27,7 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-autoprefixer');
         grunt.loadNpmTasks('grunt-angular-templates');
         grunt.loadNpmTasks('grunt-strip-code');
+        grunt.loadNpmTasks('grunt-cache-bust');
 
         // Holds platform.json config
         var objPlatform;
@@ -657,6 +658,16 @@ module.exports = function(grunt) {
                     files: copyFiles
                 }
             },
+            cacheBust: {
+                options: {
+                    rename: false
+                },
+                dist: {
+                    files: [{
+                        src: ["dist/index.html"]
+                    }]
+                }
+            },
             ngtemplates:{
                 dist: {
                     src: ng_templates,
@@ -703,6 +714,7 @@ module.exports = function(grunt) {
             grunt.task.run('cssmin:dist');
             grunt.task.run('htmlbuild:dist');
             grunt.task.run('strip_code:dist');
+            grunt.task.run('cacheBust:dist');
         }
         grunt.task.run('htmlbuild:dev');
         grunt.task.run('strip_code:dev');

@@ -51,7 +51,53 @@ module.exports = function(grunt) {
     // Unit tests.
     nodeunit: {
       tests: ['test/*_test.js']
-    }
+    },
+      
+  // Protractor tests.
+      protractor: {
+          options: {
+              keepAlive: false
+          },
+          testTargetConfigFile: {
+              configFile:"test/testConf.js",
+              options: {
+                  webdriverManagerUpdate: true
+              }
+          },
+          testKeepAliveOnFailedTest: {
+              configFile:"test/testConf.js",
+              options: {
+                  keepAlive: true,
+                  args: {
+                      specs:["test/failedTest.js"],
+                  }
+              }
+          },
+          testArgs: {
+              configFile:"test/testConf.js",
+              options: {
+                  args: {
+                      params: {
+                          number: 1,
+                          bool_true: true,
+                          bool_false: false,
+                          str: "string",
+                          nil: null, // Null is not supported.
+                          obj: {
+                              array: [1, 2, 3],
+                              undef: undefined
+                          }
+                      },
+                      capabilities: {
+                          'browserName': 'chrome'
+                      },
+                      rootElement:"body",
+                      specs:["test/argsTest.js"],
+                      verbose:true
+                  }
+              }
+          }
+      }
 
   });
 

@@ -40,6 +40,7 @@ module.exports = function(grunt) {
         };
 
         var viewFiles = [];
+        var testFiles = [];
         var jsFiles = [];
         var fontFiles = [];
         var imageFiles = [];
@@ -66,7 +67,7 @@ module.exports = function(grunt) {
                 grunt.log.error('"platform.json" already exists, to overwrite run "grunt enspire --init-force" command');
                 return false;
             }
-            grunt.file.write('platform.json','{\n\t"theme":"",\n\t"modules":[],\n\t"views":[],\n\t"includes":{\n\t\t"js":[],\n\t\t"css":[],\n\t\t"scss":[]\n\t}\n}');
+            grunt.file.write('platform.json','{\n\t"theme":"",\n\t"modules":[],\n\t"views":[],\n\t"includes":{\n\t\t"js":[],\n\t\t"css":[],\n\t\t"scss":[]\n\t}\n,\n\t"tests":[]}');
             return true;
         }
 
@@ -460,6 +461,9 @@ module.exports = function(grunt) {
                     //Get View Modals
                     viewFiles = viewFiles.concat(processViews(viewsFolder,'modals'));
 
+                    //Get View Tests
+                    viewFiles = viewFiles.concat(processViews(viewsFolder,'tests'));
+
                     //Get Templates
                     ng_templates = ng_templates.concat(processTemplates(viewsFolder));
 
@@ -651,7 +655,10 @@ module.exports = function(grunt) {
                 },
                 images:{
                     files: imageFiles
-                }
+                },
+                tests: {
+                    files: testFiles
+                },
             },
             copy:{
                 dist:{
@@ -698,6 +705,18 @@ module.exports = function(grunt) {
                         }
                     }
                 }
+            },
+            protractor_webdriver: {
+                update: {
+                    options: {
+                        command: 'webdriver-manager update -standalone',
+                    }
+                },
+                    start: {
+                        options: {
+                            command: 'webdriver-manager start',
+                        }
+                    }
             }
         });
 
@@ -705,6 +724,7 @@ module.exports = function(grunt) {
         grunt.task.run('symlink:views');
         grunt.task.run('symlink:fonts');
         grunt.task.run('symlink:images');
+        grunt.task.run('symlink:tests');
         if(arg1==='dist'){
             grunt.task.run('copy:dist');
             grunt.task.run('ngtemplates:dist');
@@ -720,8 +740,39 @@ module.exports = function(grunt) {
         grunt.task.run('strip_code:dev');
         grunt.task.run('clean:after');
 
+        grunt.loadNpmTasks('grunt-protractor-webdriver');
+
+        grunt.task.run('protractor_webdriver:start');
+
+        grunt.task.run('protractor-tests');
+
     });
 
+    grunt.registerTask('protractor-tests', function(which) {
+
+        // Instruct this task to wait until we call the done() method to continue
+        var done = this.async();
+
+        grunt.log.writeln("Running webdriver-manager start");
+
+        // Run `protractor conf.js` to start protractor tests
+        grunt.util.spawn({
+            cmd: 'protractor',
+            args: ['./dev/views/tests/conf.js']
+        }, function(error, result, code) {
+
+            if (error) {
+                grunt.log.error(String(result));
+                grunt.warn('Tests failed, protractor exited with code: ' + code);
+            }
+
+            grunt.log.writeln(String(result));
+            grunt.log.writeln("Done running protractor tests!");
+
+            // All done, continue to the next tasks
+            done();
+        });
+    });
 
     function processTemplates(dir){
         var templateFiles = [];
